@@ -21,62 +21,50 @@ RUN  yum -y update && yum clean all &&          \
      yum -y  install                            \
 	                epel-release            \
     		        lsb                 	\
-                        wget                    \
                         gcc gcc-c++ make        \
-                        gcc-gfortran           	\
+			gcc-gfortran            \
                         binutils-devel        	\
-                        openssh-server      	\
-                        vim                 	\
-                        libtcl*                 \
-			libnl-route-*           \
-                        libcrypto*          	\
-                        libssl*             	\
-                        libnuma*            	\
-                        libevent*            	\
+			hwloc-devel		\
+		        libevent*            	\
                         dkms*                	\
-                        openssl             	\
                         git                 	\
                         libtool                	\
-                        pciutils            	\
-                        module-init-tools   	\
                         kmod                	\
 			libmnl                  \
-			tcsh                    \
-                        lsof                	\
-                        curl*               	\
-                        numa*               	\
-                        gnu*                    \
-                        autoconf               	\
-                        flex                    \
-                        zlib*                   \
-			hwloc                   \
-			hwloc-devel
+                        numa*			\
+                        flex			\
+			curl			\
+		&& yum -y remove texlive* && yum clean all
+		#       openssl                 \
+                #	pciutils
+		#	module-init-tools       \	     
+		#       openssh-server
+		#	tcsh                    \
+                #        lsof                	\
+                #        curl*               	\
+                #        gnu*                    \
+                #        autoconf               	\
+                #        zlib*                   \
+		#	hwloc                   \
+		#	hwloc-devel
 
 
 RUN   yum -y  install                           \
-                        python-pip*             \
-                        python-gflags*          \
+                        python-pip*              \
                         python-devel*           \
                         python-netifaces        \
                         python-netaddr          \
-                        python-setuptools-*     \
-                        python-cryptography     \
-                        python-libxml2*
-
-
-RUN yum -y install  czmq-*
+                        python-gflags\
+                        python-setuptools-*      \
+                        python-gflags*	\ 
+                        python-cryptography     
+                        #python-libxml2*
 
 # adding support for kubernetes API access from docker
-#RUN pip install --upgrade pip --ignore-installed
 RUN pip install kubernetes --disable-pip-version-check
-#RUN pip install kubernetes --ignore-installed
 
 
 WORKDIR /
-# adding support for Mellanox IB
-#ENV TERM vt100
-#COPY  MLNX_OFED_LINUX-4.4-1.0.0.0-rhel7.5-ppc64le-ext /
-#RUN ./mlnxofedinstall --user-space-only --without-fw-update	--all --force -q
 
 #configure and build pmix,openmpi
 ARG CC=gcc
@@ -90,12 +78,15 @@ WORKDIR /
 RUN git clone https://github.com/pmix/pmix.git
 RUN cd pmix && git checkout remotes/origin/v2.1 && ./autogen.pl && \
 ./configure --with-libevent-libdir=/usr/lib64 --with-libevent-header=/usr/include/event.h &&  make && make install
+RUN rm -rf pmix
+
 
 #download and build openmpi 
-WORKDIR /
 RUN git clone https://github.com/open-mpi/ompi.git
 RUN cd ompi && git checkout remotes/origin/v3.0.x && ./autogen.pl && \
-./configure --with-flux --with-hwloc=external --with-libevent=/usr --with-pmix=/usr/local/ --with-pmix-libdir=/usr/local/lib  --enable-shared --disable-static  --enable-mpi-fortran=usempi  --disable-libompitrace --enable-script-wrapper-compilers --enable-wrapper-rpath  &&  make && make install
+./configure --with-flux --with-hwloc=external --with-libevent=/usr --with-pmix=/usr/local/ --with-pmix-libdir=/usr/local/lib  --enable-shared --disable-static  --enable-mpi-fortran=usempi  --disable-libompitrace --enable-script-wrapper-compilers --enable-wrapper-rpath  &&  make && make install && rm -rf ompi
+
+RUN yum -y remove git
 
 # set ld path and ssh key
 RUN echo "/usr/local/lib" >> /etc/ld.so.conf && ldconfig
@@ -103,7 +94,6 @@ RUN ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa && \
     cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys && \
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 
-WORKDIR /
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/ppc64le/kubectl
 RUN chmod +x kubectl
 COPY bootstrap.py /usr/local/bin/
@@ -111,8 +101,7 @@ RUN chmod +x /usr/local/bin/bootstrap.py
 COPY kssh /
 RUN chmod +x kssh
 ENV PATH /usr/local/bin:./:/:$PATH
-# if using mellanox accelerator libraries for collectives
-#ENV LD_LIBRARY_PATH /usr/local/lib:/opt/mellanox/mxm:/opt/mellanox/hcoll:$LD_LIBRARY_PATH
+
 ENV LD_LIBRARY_PATH /usr/local/lib:$LD_LIBRARY_PATH
 ADD example example
 WORKDIR /example/

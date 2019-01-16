@@ -16,4 +16,4 @@
  #
 
 docker rmi -f $(docker images | egrep "kube-mpi" | awk '{print $3}')
-docker build --no-cache -t kube-mpi:centos -f images/Dockerfile .
+docker build --no-cache --force-rm --compress --squash -t dcscloud.icp:8500/default/kube-mpi:centos -f images/Dockerfile context/
