@@ -15,6 +15,7 @@
  # See the License for the specific language governing permissions and
  # limitations under the License.
 '''
+from __future__ import print_function
 from collections import OrderedDict
 from kubernetes import client,config
 from kubernetes.client.models.v1_pod_spec import V1PodSpec
@@ -56,7 +57,7 @@ podName   = os.environ.get('POD_NAME',  '')
 cmd = ""
 
 def innet(ip, net):
-    print("ip: "+ip, "net: " + net)
+    print(("ip: "+ip, "net: " + net))
     ip = IPAddress(ip).value
     print("ipnew: " + str(ip))
     network = IPNetwork(net)
@@ -89,7 +90,7 @@ def getPodIpStr():
     worker_num = job.items[0].spec.parallelism
     items = ps_pods.items
 
-    print("items=  ", len(items))
+    print(("items=  ", len(items)))
     print("worker_num=  " + str(worker_num))
 
     if (len(items) < worker_num):
@@ -127,7 +128,7 @@ def getHostIpStr():
 
     containers = pods[0].spec.containers
     for container in containers :
-        print container.name
+        print(container.name)
 
     for i in range(len(pods)):
 
@@ -135,22 +136,22 @@ def getHostIpStr():
         pod_name = pods[i].metadata.name
         job_name = job.metadata.name
         if not pod_name.startswith(job_name):
-            print 'ignored pod "%s"' % (pod_name)
+            print('ignored pod "%s"' % (pod_name))
             continue
 
         # if number of active pods < total, job is not ready
         if job.status.active < workers:
-            print 'only %d out of %d pods are ready; wait' % (\
+            print('only %d out of %d pods are ready; wait' % (\
                     job.status.active, 
-                    workers)
+                    workers))
             ready = False
             break
 
         podIp = pods[i].status.pod_ip
-        print 'add pod "%s" (pod_ip="%s" local_ip="%s")' % (\
+        print('add pod "%s" (pod_ip="%s" local_ip="%s")' % (\
                 pod_name, 
                 podIp, 
-                localIp)
+                localIp))
 
         if (i == 0 and podName == pods[i].metadata.name):
             isMaster = True
@@ -165,7 +166,7 @@ def startSSH():
     print (cmd)
     subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     while subp.poll() is None:
-        print subp.stdout.readline()
+        print(subp.stdout.readline())
 
 def execCommandhost(hostStr, items):
     #cmd = "mpirun --allow-run-as-root -mca plm_rsh_agent kssh -mca oob tcp -mca pml ob1  -mca btl_tcp_if_include %s  -n %s %s %s" % (FLAGS.network, str(len(items)), hostStr, FLAGS.cmd)
@@ -175,11 +176,11 @@ def execCommandhost(hostStr, items):
             len(items), 
             hostStr, 
             FLAGS.cmd)
-    print 'Command:', cmd
+    print('Command:', cmd)
     subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     while subp.poll() is None:
-        print subp.stdout.readline()
-    print subp.returncode
+        print(subp.stdout.readline())
+    print(subp.returncode)
 
 def execCommandpod(hostStr):
     cmd = "mpirun --allow-run-as-root -mca oob tcp -mca pml ob1 -mca btl tcp,vader,self -n 2 %s %s" % (\
@@ -188,8 +189,8 @@ def execCommandpod(hostStr):
     print(cmd)
     subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     while subp.poll() is None:
-        print subp.stdout.readline()
-    print subp.returncode
+        print(subp.stdout.readline())
+    print(subp.returncode)
 
 def waitOrExit():
     while True:
@@ -215,22 +216,22 @@ if __name__ == "__main__":
 
     # --------------------------------------------------------------------------
 
-    print
-    print 80 * '-'
-    print 80 * '-'
+    print()
+    print(80 * '-')
+    print(80 * '-')
     os.system('env')
-    print 80 * '-'
+    print(80 * '-')
 
     podlist = v1.list_namespaced_pod(namespace, label_selector="job=" + FLAGS.job_name)
     pods    = podlist.items
 
     for pod in pods:
-        print 'pod host_ip=%s pod_ip=%s name=%s' % (\
+        print('pod host_ip=%s pod_ip=%s name=%s' % (\
                 pod.status.host_ip, 
                 pod.status.pod_ip, 
-                pod.metadata.name)
-    print 80 * '-'
-    print
+                pod.metadata.name))
+    print(80 * '-')
+    print()
 
     # --------------------------------------------------------------------------
 
