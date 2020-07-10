@@ -1,2 +1,3 @@
 # kube-mpi
+
 High performance computing (HPC) depends on the distributed parallel programming API called the Message Passing Interface (MPI). Cloud native technologies depend on fault tolerance and resiliency normally associated with stateless applications. HPC applications are generally stateful and hence supporting programming models such as MPI have not been made available in public or private clouds that are enabled with Docker and/or Kubernetes. Kube-mpi is a prototype that provides high performance computing developers of simulation, distributed deep learning, and analytics applications a mechanism for building and deploying their applications in container orchestrations services such as kubernetes and IBM's IBM Cloud private.
