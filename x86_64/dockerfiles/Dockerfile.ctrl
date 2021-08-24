@@ -1,0 +1,28 @@
+FROM centos:8
+
+WORKDIR /
+RUN  yum -y update && yum clean all &&          \
+     yum -y  install                            \
+                        epel-release            \
+			 python2			\
+                         openssh-clients*	\
+                         && yum clean all
+
+RUN yum -y install python2-pip
+#RUN pip install --upgrade pip
+RUN pip2 install setuptools --upgrade
+RUN pip2 install kubernetes --ignore-installed ipaddress
+RUN pip2 install absl-py
+RUN pip2 install netifaces
+RUN pip2 install netaddr
+RUN pip2 install setuptools
+RUN pip2 install cryptography
+RUN pip2 install lxml
+#
+WORKDIR /
+COPY mpi_controller.py /
+RUN chmod +x mpi_controller.py
+ENV PATH /usr/bin:/usr/local/bin:./:/:$PATH
+ENV LD_LIBRARY_PATH /usr/bin:/usr/local/lib:$LD_LIBRARY_PATH
+#
+ENTRYPOINT /bin/bash

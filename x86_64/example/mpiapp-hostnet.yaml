@@ -1,0 +1,137 @@
+#
+# Copyright © 2018 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mpictrl1
+  namespace: default
+  labels:
+    name: mpictrl1
+    job: mpictrl1
+spec:
+  template:
+    metadata:
+      name: mpictrl1
+      labels:
+        name: mpictrl1
+        job: mpictrl1
+    spec:
+      hostNetwork: true
+      containers:
+        - name: mpictrl1
+          imagePullPolicy: Always
+          image: default-route-openshift-image-registry.apps.foc.foccluster.com/default/mpi-ctrl:1.0
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: PYTHONUNBUFFERED
+              value: '1'
+            - name: PYTHONOPTIMIZE
+              value: '1'
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          command: ['python2','/mpi_controller.py']
+          args:
+          - --network=10.0.5.0/16
+          - --job_name=hello
+          - --ppn=4
+          - --cmd=hello
+          - --mpi_args=-tag-output -mca pml ucx -mca btl ^uct
+          - --app_args=one two three
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hello
+  namespace: default
+  labels:
+    name: hello
+    job: hello
+spec:
+  completions: 2
+  parallelism: 2
+  template:
+    metadata:
+      name: hello
+      labels:
+        name: hello
+        job: hello
+    spec:
+      securityContext:
+          runAsUser: 0
+          fsGroup: 0
+      hostNetwork: true
+      containers:
+        - name: hello
+          imagePullPolicy: Always
+          image: default-route-openshift-image-registry.apps.foc.foccluster.com/default/hello:1.0
+          volumeMounts:
+            - mountPath: /root/.ssh
+              name: sshkey
+            - mountPath: /run
+              name: verbs
+            - mountPath: /sys/class/infiniband_verbs/
+              name: ibdevices
+            - mountPath: /dev/infiniband
+              name: dev-infiniband
+          securityContext:
+            privileged: true
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: PYTHONUNBUFFERED
+              value: '1'
+            - name: PYTHONOPTIMIZE
+              value: '1'
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          command: ["./wait4app.sh"]
+          args: ["./hello"]
+      restartPolicy: Never
+      volumes:
+      - name: sshkey
+        hostPath:
+          path: /root/.ssh
+      - name: sockets
+        hostPath:
+          path: /run
+      - name: verbs
+        hostPath:
+          path: /etc/libibverbs.d
+      - name: ibdevices
+        hostPath:
+          path: /sys/class/infiniband_verbs/
+      - name: dev-infiniband
+        hostPath:
+          path: /dev/infiniband
